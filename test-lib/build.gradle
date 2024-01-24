@@ -1,0 +1,20 @@
+version = '0.1.0'
+
+apply plugin: 'java-library'
+
+optimizedJar.enabled = false
+
+dependencies {
+    compileOnly("foundation.icon:javaee-api:$javaeeVersion")
+    implementation("foundation.icon:icon-sdk:$iconsdkVersion")
+    implementation project(':score-lib')
+
+    implementation("org.mockito:mockito-core:$mockitoCoreVersion")
+    implementation("org.junit.jupiter:junit-jupiter-api:$jupiterApiVersion")
+    implementation("org.junit.jupiter:junit-jupiter-engine:$jupiterEngineVersion")
+    implementation("foundation.icon:javaee-unittest:$javaeeUnittestVersion")
+}
+
+test {
+    useJUnitPlatform()
+}

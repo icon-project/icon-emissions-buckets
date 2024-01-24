@@ -1,5 +1,5 @@
 # Introduction
-For ICON to be able to manage where to send it inflation in versetile manner it needs a contract which can in a configurable way distribute to many sources.
+For ICON to be able to manage where to send it inflation in versatile manner it needs a contract which can in a configurable way distribute to many sources.
 
 Goloop can current assign inflation to 3 buckets
 * Validator/Staking rewards
@@ -10,10 +10,10 @@ This IRelay bucket is what this contract aims to fill. Where we have one contrac
 
 ## Overview
 ### ICON inflation flow:
-![InflationBucketsOverview.drawio](https://hackmd.io/_uploads/B1WIG4Ct6.png)
+![InflationBucketsOverview](resources/Inflation.png)
 
-### IRelay Contract Overview:
-![IRelayOverview.drawio](https://hackmd.io/_uploads/BJcBLERFp.png)
+### Buckets Contract Overview:
+![IRelayOverview](resources/IRelay.png)
 
 ### Requirements
 * The contract has to be owned by ICON Governance
@@ -35,7 +35,7 @@ Bucket {
 
 ## Methods
 
-```java=
+```java
 /**
  * Configures the inflations buckets.
  *
@@ -52,7 +52,7 @@ public void configureBuckets(Bucket[] _buckets) {
 }
 ```
 
-```java=
+```java
 /**
  * Distributes inflations to all currently configured buckets
  *
