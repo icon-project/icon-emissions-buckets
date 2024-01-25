@@ -9,6 +9,9 @@ dependencies {
     implementation("foundation.icon:icon-sdk:$iconsdkVersion")
     implementation project(':score-lib')
 
+    compileOnly "foundation.icon:javaee-score-client:$scoreClientVersion"
+    annotationProcessor "foundation.icon:javaee-score-client:$scoreClientVersion"
+
     implementation("org.mockito:mockito-core:$mockitoCoreVersion")
     implementation("org.junit.jupiter:junit-jupiter-api:$jupiterApiVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$jupiterEngineVersion")
