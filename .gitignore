@@ -91,7 +91,6 @@ build
 .vscode
 .keystores
 .deployment
-gradle.properties
 
 #eclipse
 .project
