@@ -133,12 +133,12 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     }
 
     @External(readonly = true)
-    public Address getsICX() {
+    public Address getSICX() {
         return sICX.get();
     }
 
     @External
-    public void setsICX(Address _sICX) {
+    public void setSICX(Address _sICX) {
         onlyOwner();
         sICX.set(_sICX);
     }
@@ -205,8 +205,8 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     public void swap(BigInteger amount) {
         BigInteger icxPriceInUSD = Context.call(BigInteger.class, getBalancedOracle(), "getLastPriceInUSD", "ICX");
         BigInteger usdAmount = amount.multiply(icxPriceInUSD).divide(EXA);
-        BigInteger minReceive = (POINTS.subtract(maxSwapSlippage.get())).multiply(usdAmount).divide(POINTS);
-        Context.call(amount, getBalancedRouter(), "route", new Address[] { sICX.get(), bnUSD.get() }, minReceive);
+        BigInteger minReceive = (POINTS.subtract(getMaxSwapSlippage())).multiply(usdAmount).divide(POINTS);
+        Context.call(amount, getBalancedRouter(), "route", new Address[] { getSICX(), getBnUSD() }, minReceive);
     }
 
     @External
@@ -244,13 +244,13 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     @External
     public void withdrawLiquidity(BigInteger pid, BigInteger amount) {
         onlyOwner();
-        Context.call(balancedDex.get(), "remove", pid, amount, true);
+        Context.call(getBalancedDex(), "remove", pid, amount, true);
     }
 
     @External(readonly = true)
     public BigInteger calculateBnUSDReward(BigInteger pid, BigInteger amount) {
         @SuppressWarnings("unchecked")
-        Map<String, Object> stats = (Map<String, Object>) Context.call(balancedDex.get(), "getPoolStats", pid);
+        Map<String, Object> stats = (Map<String, Object>) Context.call(getBalancedDex(), "getPoolStats", pid);
         BigInteger base = (BigInteger) stats.get("base");
         BigInteger quote = (BigInteger) stats.get("quote");
         BigInteger totalSupply = (BigInteger) stats.get("total_supply");
@@ -259,8 +259,10 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         Address quoteToken = (Address) stats.get("quote_token");
         String baseSymbol = Context.call(String.class, baseToken, "symbol");
         String quoteSymbol = Context.call(String.class, quoteToken, "symbol");
-        BigInteger baseUSDPrice = Context.call(BigInteger.class, balancedOracle.get(), "getLastPriceInUSD", baseSymbol);
-        BigInteger quoteUSDPrice = Context.call(BigInteger.class, balancedOracle.get(), "getLastPriceInUSD", quoteSymbol);
+
+        Address oracle = getBalancedOracle();
+        BigInteger baseUSDPrice = Context.call(BigInteger.class, oracle, "getLastPriceInUSD", baseSymbol);
+        BigInteger quoteUSDPrice = Context.call(BigInteger.class, oracle, "getLastPriceInUSD", quoteSymbol);
         BigInteger baseDecimals = (BigInteger) stats.get("base_decimals");
         BigInteger quoteDecimals = (BigInteger) stats.get("quote_decimals");
         baseDecimals = pow(BigInteger.TEN, baseDecimals.intValue());
@@ -278,9 +280,9 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         BigInteger absDiff = baseAmountInUSD.subtract(quoteAmountInUSD).abs().multiply(POINTS);
         BigInteger avg = baseAmountInUSD.add(quoteAmountInUSD).divide(BigInteger.TWO);
         BigInteger slippage = absDiff.divide(avg);
-        Context.require(slippage.compareTo(lPSlippage.get()) <= 0, Errors.LP_OVER_SLIPPAGE_LIMIT);
+        Context.require(slippage.compareTo(getLPSlippage()) <= 0, Errors.LP_OVER_SLIPPAGE_LIMIT);
 
-        BigInteger percentageReward = POINTS.add(swapReward.get());
+        BigInteger percentageReward = POINTS.add(getSwapReward());
         BigInteger totalUSDValue = baseAmountInUSD.add(quoteAmountInUSD);
 
         return totalUSDValue.multiply(percentageReward).divide(POINTS);
@@ -288,7 +290,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
 
     @External
     public void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data) {
-        only(balancedDex.get());
+        only(getBalancedDex());
         String unpackedData = new String(_data);
         Context.require(!unpackedData.equals(""), Errors.TOKEN_FALLBACK_DATA_EMPTY);
 
@@ -324,7 +326,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         BigInteger reward = calculateBnUSDReward(id, value);
         order = validateOrder(order, reward);
         orders.set(id, order);
-        Context.call(bnUSD.get(), "transfer", from, reward);
+        Context.call(getBnUSD(), "transfer", from, reward);
         LiquidityPurchased(id, value, reward);
     }
 
@@ -342,7 +344,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     }
 
     private BigInteger getCurrentPeriod() {
-        BigInteger period = orderPeriod.get();
+        BigInteger period = getOrderPeriod();
         BigInteger time = BigInteger.valueOf(Context.getBlockTimestamp());
 
         return time.divide(period).multiply(period);

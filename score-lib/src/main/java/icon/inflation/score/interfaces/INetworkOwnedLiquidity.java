@@ -40,10 +40,10 @@ public interface INetworkOwnedLiquidity {
     void setBnUSD(Address _bnUSD);
 
     @External(readonly = true)
-    Address getsICX();
+    Address getSICX();
 
     @External
-    void setsICX(Address _sICX);
+    void setSICX(Address _sICX);
 
     @External(readonly = true)
     Address getBalancedOracle();
