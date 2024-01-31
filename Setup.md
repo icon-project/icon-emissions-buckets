@@ -2,8 +2,9 @@
 1. Deploy buckets contract, takes no parameters
 2. Transfer ownership to Governance address
 3. Create a proposal with the following parameters
-   1. setNetworkScore("relay", \<address\>)
-   2.
+   1. setRewardFund(5678910000000000000000000)
+   2. setNetworkScore("relay", \<address\>)
+   3.
 ```
 setRewardFundAllocation2([
     {"name": "Iprep",  "value" : 4530},
