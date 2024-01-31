@@ -44,9 +44,9 @@ Call vote with two actions
 ```
 configureBuckets(
     [
-        {"name": "Insurance", "address": \<address\>, "share": "900000000000000000"},
-        {"name": "Savings rate", "address": \<address\>, "share": "50000000000000000"},
-        {"name": "Network owned liquidity", "address": \<address\>, "share": "50000000000000000"}
+        {"name": "Insurance", "address": \<address\>, "share": "40000000000000000"},
+        {"name": "Savings rate", "address": \<address\>, "share": "40000000000000000"},
+        {"name": "Network owned liquidity", "address": \<address\>, "share": "920000000000000000"}
     ]
 )
 ```
