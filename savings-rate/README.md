@@ -31,7 +31,7 @@ public void fallback() {
     try {
         stakeAndSend(Context.getBalance(Context.getAddress()));
     } catch (Exception e) {
-        StakeFailed(e.getMessage());
+        StakeFailed();
     }
 }
 ```
@@ -51,5 +51,5 @@ public void stakeAndSend(BigInteger amount) {
 
 ```java
 @EventLog(indexed = 1)
-public void StakeFailed(String reason)
+public void StakeFailed()
 ```

@@ -231,7 +231,7 @@ public void fallback() {
     try {
         swap(Context.getValue());
     } catch error {
-        SwapFailed(error)
+        SwapFailed()
     }
 }
 ```
@@ -292,10 +292,10 @@ private LiquidityOrder validateOrder(LiquidityOrder order, BigInteger payoutAmou
 
 ```java
 @EventLog(indexed = 1)
-public void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger bnUSDPayout)
+void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger bnUSDPayout)
 ```
 
 ```java
 @EventLog(indexed = 1)
-public void SwapFailed(String reason)
+void SwapFailed()
 ```

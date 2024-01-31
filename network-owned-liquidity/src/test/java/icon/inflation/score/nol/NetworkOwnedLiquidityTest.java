@@ -674,7 +674,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         _testPermission("setOrderPeriod", Checks.Errors.ONLY_OWNER, BigInteger.ONE);
         _testPermission("setBalancedDex", Checks.Errors.ONLY_OWNER, dex.getAddress());
         _testPermission("setBnUSD", Checks.Errors.ONLY_OWNER, dex.getAddress());
-        _testPermission("setsICX", Checks.Errors.ONLY_OWNER, dex.getAddress());
+        _testPermission("setSICX", Checks.Errors.ONLY_OWNER, dex.getAddress());
         _testPermission("setBalancedOracle", Checks.Errors.ONLY_OWNER, dex.getAddress());
         _testPermission("setBalancedRouter", Checks.Errors.ONLY_OWNER, dex.getAddress());
         _testPermission("setMaxSwapSlippage", Checks.Errors.ONLY_OWNER, BigInteger.ONE);
