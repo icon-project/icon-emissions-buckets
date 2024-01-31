@@ -156,16 +156,16 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = EXA;
 
         Map<String, Object> stats = Map.of(
-                "baseToken", baseToken,
-                "quoteToken", quoteToken,
+                "base_token", baseToken,
+                "quote_token", quoteToken,
                 "base", base,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-        when(oracle.mock.getPriceInUSD("sICX")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(baseUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
@@ -215,25 +215,25 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = EXA;
 
         Map<String, Object> stats1 = Map.of(
-                "baseToken", baseToken1,
-                "quoteToken", quoteToken,
+                "base_token", baseToken1,
+                "quote_token", quoteToken,
                 "base", base1,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
         Map<String, Object> stats2 = Map.of(
-                "baseToken", baseToken2,
-                "quoteToken", quoteToken,
+                "base_token", baseToken2,
+                "quote_token", quoteToken,
                 "base", base2,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-            when(oracle.mock.getPriceInUSD("sICX")).thenReturn(base1USDPrice);
-            when(oracle.mock.getPriceInUSD("sARCH")).thenReturn(base2USDPrice);
-            when(oracle.mock.getPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+            when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(base1USDPrice);
+            when(oracle.mock.getLastPriceInUSD("sARCH")).thenReturn(base2USDPrice);
+            when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
             when(dex.mock.getPoolStats(pid1)).thenReturn(stats1);
             when(dex.mock.getPoolStats(pid2)).thenReturn(stats2);
 
@@ -285,16 +285,16 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = EXA;
 
         Map<String, Object> stats = Map.of(
-                "baseToken", baseToken,
-                "quoteToken", quoteToken,
+                "base_token", baseToken,
+                "quote_token", quoteToken,
                 "base", base,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-        when(oracle.mock.getPriceInUSD("sICX")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(baseUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
         // Act
@@ -326,16 +326,16 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = EXA;
 
         Map<String, Object> stats = Map.of(
-                "baseToken", baseToken,
-                "quoteToken", quoteToken,
+                "base_token", baseToken,
+                "quote_token", quoteToken,
                 "base", base,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-        when(oracle.mock.getPriceInUSD("sICX")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(baseUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
@@ -381,16 +381,16 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = EXA;
 
         Map<String, Object> stats = Map.of(
-                "baseToken", baseToken,
-                "quoteToken", quoteToken,
+                "base_token", baseToken,
+                "quote_token", quoteToken,
                 "base", base,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-        when(oracle.mock.getPriceInUSD("sICX")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(baseUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
@@ -431,16 +431,16 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = EXA;
 
         Map<String, Object> stats = Map.of(
-                "baseToken", baseToken,
-                "quoteToken", quoteToken,
+                "base_token", baseToken,
+                "quote_token", quoteToken,
                 "base", base,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-        when(oracle.mock.getPriceInUSD("sICX")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(baseUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
@@ -484,16 +484,16 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = BigInteger.valueOf(15).multiply(BigInteger.TEN.pow(17));
 
         Map<String, Object> stats = Map.of(
-                "baseToken", baseToken,
-                "quoteToken", quoteToken,
+                "base_token", baseToken,
+                "quote_token", quoteToken,
                 "base", base,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-        when(oracle.mock.getPriceInUSD("sARCH")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getPriceInUSD("sICX")).thenReturn(quoteUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sARCH")).thenReturn(baseUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
         // User send 1% of supply, this means 20 sARCH and 10 sICX value
@@ -537,16 +537,16 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger quoteUSDPrice = EXA;
 
         Map<String, Object> stats = Map.of(
-                "baseToken", baseToken,
-                "quoteToken", quoteToken,
+                "base_token", baseToken,
+                "quote_token", quoteToken,
                 "base", base,
                 "quote", quote,
                 "total_supply", totalSupply,
-                "baseDecimals", baseDecimals,
-                "quoteDecimals", quoteDecimals);
+                "base_decimals", baseDecimals,
+                "quote_decimals", quoteDecimals);
 
-        when(oracle.mock.getPriceInUSD("sICX")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(baseUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
@@ -616,7 +616,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         // add some remaining balance that should not swapped on fallback
         networkOwnedLiquidity.getAccount().addBalance(BigInteger.ONE);
         BigInteger ICXBnUSDPrice = EXA.multiply(BigInteger.TWO); // 1 ICX = $2
-        when(oracle.mock.getPriceInUSD("ICX")).thenReturn(ICXBnUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXBnUSDPrice);
         BigInteger slippage = (BigInteger) networkOwnedLiquidity.call("getMaxSwapSlippage");
         BigInteger USDValue = amount.multiply(ICXBnUSDPrice).divide(EXA);
         BigInteger minReceive = USDValue.multiply(POINTS.subtract(slippage)).divide(POINTS);
@@ -644,7 +644,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         networkOwnedLiquidity.invoke(governance, amount, "fallback");
 
         // Assert
-        verify(_spy).SwapFailed(null);
+        verify(_spy).SwapFailed();
     }
 
     @Test
@@ -656,7 +656,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         networkOwnedLiquidity.getAccount().addBalance(amount);
 
         BigInteger ICXBnUSDPrice = EXA.multiply(BigInteger.TWO); // 1 ICX = $2
-        when(oracle.mock.getPriceInUSD("ICX")).thenReturn(ICXBnUSDPrice);
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXBnUSDPrice);
         BigInteger slippage = (BigInteger) networkOwnedLiquidity.call("getMaxSwapSlippage");
         BigInteger USDValue = amount.multiply(ICXBnUSDPrice).divide(EXA);
         BigInteger minReceive = USDValue.multiply(POINTS.subtract(slippage)).divide(POINTS);

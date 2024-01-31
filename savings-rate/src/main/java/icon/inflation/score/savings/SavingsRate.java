@@ -55,7 +55,7 @@ public class SavingsRate implements ISavingsRate {
         try {
             stakeAndSend(Context.getBalance(Context.getAddress()));
         } catch (Exception e) {
-            StakeFailed(e.getMessage());
+            StakeFailed();
         }
     }
 
@@ -64,7 +64,7 @@ public class SavingsRate implements ISavingsRate {
         Context.call(amount, staking.get(), "stakeICX", balancedReceiver.get());
     }
 
-    @EventLog(indexed = 1)
-    public void StakeFailed(String reason) {
+    @EventLog(indexed = 0)
+    public void StakeFailed() {
     }
 }

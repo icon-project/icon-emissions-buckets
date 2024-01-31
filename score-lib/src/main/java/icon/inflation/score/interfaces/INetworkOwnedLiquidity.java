@@ -12,8 +12,8 @@ public interface INetworkOwnedLiquidity {
     @EventLog(indexed = 1)
     void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger bnUSDPayout);
 
-    @EventLog(indexed = 1)
-    void SwapFailed(String reason);
+    @EventLog(indexed = 0)
+    void SwapFailed();
 
     @External(readonly = true)
     String name();

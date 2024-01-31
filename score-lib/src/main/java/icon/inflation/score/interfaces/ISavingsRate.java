@@ -2,7 +2,6 @@ package icon.inflation.score.interfaces;
 
 import java.math.BigInteger;
 
-import icon.inflation.score.structs.Bucket;
 import score.Address;
 import score.annotation.EventLog;
 import score.annotation.External;
@@ -31,6 +30,6 @@ public interface ISavingsRate {
     @External
     void stakeAndSend(BigInteger amount);
 
-    @EventLog(indexed = 1)
-    void StakeFailed(String reason);
+    @EventLog(indexed = 0)
+    void StakeFailed();
 }

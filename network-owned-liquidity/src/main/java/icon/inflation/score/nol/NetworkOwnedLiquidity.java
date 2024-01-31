@@ -73,8 +73,8 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     public void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger bnUSDPayout) {
     }
 
-    @EventLog(indexed = 1)
-    public void SwapFailed(String reason) {
+    @EventLog(indexed = 0)
+    public void SwapFailed() {
     }
 
     @External(readonly = true)
@@ -203,7 +203,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
 
     @External
     public void swap(BigInteger amount) {
-        BigInteger icxPriceInUSD = Context.call(BigInteger.class, getBalancedOracle(), "getPriceInUSD", "ICX");
+        BigInteger icxPriceInUSD = Context.call(BigInteger.class, getBalancedOracle(), "getLastPriceInUSD", "ICX");
         BigInteger usdAmount = amount.multiply(icxPriceInUSD).divide(EXA);
         BigInteger minReceive = (POINTS.subtract(maxSwapSlippage.get())).multiply(usdAmount).divide(POINTS);
         Context.call(amount, getBalancedRouter(), "route", new Address[] { sICX.get(), bnUSD.get() }, minReceive);
@@ -255,14 +255,14 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         BigInteger quote = (BigInteger) stats.get("quote");
         BigInteger totalSupply = (BigInteger) stats.get("total_supply");
 
-        Address baseToken = (Address) stats.get("baseToken");
-        Address quoteToken = (Address) stats.get("quoteToken");
+        Address baseToken = (Address) stats.get("base_token");
+        Address quoteToken = (Address) stats.get("quote_token");
         String baseSymbol = Context.call(String.class, baseToken, "symbol");
         String quoteSymbol = Context.call(String.class, quoteToken, "symbol");
-        BigInteger baseUSDPrice = Context.call(BigInteger.class, balancedOracle.get(), "getPriceInUSD", baseSymbol);
-        BigInteger quoteUSDPrice = Context.call(BigInteger.class, balancedOracle.get(), "getPriceInUSD", quoteSymbol);
-        BigInteger baseDecimals = (BigInteger) stats.get("baseDecimals");
-        BigInteger quoteDecimals = (BigInteger) stats.get("quoteDecimals");
+        BigInteger baseUSDPrice = Context.call(BigInteger.class, balancedOracle.get(), "getLastPriceInUSD", baseSymbol);
+        BigInteger quoteUSDPrice = Context.call(BigInteger.class, balancedOracle.get(), "getLastPriceInUSD", quoteSymbol);
+        BigInteger baseDecimals = (BigInteger) stats.get("base_decimals");
+        BigInteger quoteDecimals = (BigInteger) stats.get("quote_decimals");
         baseDecimals = pow(BigInteger.TEN, baseDecimals.intValue());
         quoteDecimals = pow(BigInteger.TEN, quoteDecimals.intValue());
 
@@ -311,7 +311,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         try {
             swap(Context.getValue());
         } catch (Exception e) {
-            SwapFailed(e.getMessage());
+            SwapFailed();
         }
     }
 
