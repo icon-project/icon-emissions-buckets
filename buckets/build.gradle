@@ -25,6 +25,7 @@ jacocoTestReport {
 }
 
 optimizedJar {
+    dependsOn project(':score-lib').jar
     mainClassName = 'icon.inflation.score.buckets.Buckets'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
@@ -34,10 +35,6 @@ optimizedJar {
 
 deployJar {
     endpoints {
-        sejong {
-            uri = 'https://sejong.net.solidwallet.io/api/v3'
-            nid = 0x53
-        }
         berlin {
             uri = 'https://berlin.net.solidwallet.io/api/v3'
             nid = 0x7
