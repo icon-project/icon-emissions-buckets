@@ -8,7 +8,6 @@
 ```
 setRewardFundAllocation2([
     {"name": "Iprep",  "value" : 4530},
-    {"name": "Ivoter", "value" : 0},
     {"name": "Icps",   "value": 250},
     {"name": "Irelay", "value" : 5000},
     {"name": "Iwage",  "value" : 220}
