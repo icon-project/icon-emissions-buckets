@@ -2,18 +2,18 @@
 1. Deploy buckets contract, takes no parameters
 2. Transfer ownership to Governance address
 3. Create a proposal with the following parameters
-   1. setRewardFund(5678910000000000000000000)
-   2. setNetworkScore("relay", \<address\>)
+   1. setNetworkScore("relay", \<address\>)
+   2. setRewardFund(5678910000000000000000000)
    3.
-```
-setRewardFundAllocation2([
-    {"name": "Iprep",  "value" : 4530},
-    {"name": "Icps",   "value": 250},
-    {"name": "Irelay", "value" : 5000},
-    {"name": "Iwage",  "value" : 220}
-   ]
-)
-```
+   ```
+   setRewardFundAllocation2([
+       {"name": "Iprep",  "value": 4530},
+       {"name": "Icps",   "value": 250},
+       {"name": "Irelay", "value": 5000},
+       {"name": "Iwage",  "value": 220}
+     ]
+   )
+   ```
 
 The contract should now be receiving inflation.
 
