@@ -14,4 +14,5 @@ public class Constants {
             BigInteger.valueOf(86400).multiply(MICRO_SECONDS_IN_A_SECOND);
     public static final BigInteger MICRO_SECONDS_IN_A_WEEK = BigInteger.valueOf(7L).multiply(MICRO_SECONDS_IN_A_DAY);
     public static final BigInteger MICRO_SECONDS_IN_A_MONTH = BigInteger.valueOf(4).multiply(MICRO_SECONDS_IN_A_WEEK);
+    public static final BigInteger BLOCKS_IN_A_MONTH = BigInteger.valueOf(43200 * 30);
 }

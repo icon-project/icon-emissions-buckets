@@ -5,7 +5,6 @@ In this contract validators can assign different amount of LP tokens to be bough
 
 ### Requirements
 * The contract should be owned by governance.
-* The contract should swap incoming inflation to bnUSD continuously.
 * The contract should expose a method to do smaller swaps in case of slippage issues.
 * The contract should allow governance to setup buy orders with limits. Ex buy $100K dollars of sICX/bnUSD liquidity each month.
 * The contract should allow anyone to fill liquidity orders.
@@ -17,24 +16,22 @@ In this contract validators can assign different amount of LP tokens to be bough
 ## Storage and Structs
 ```java
 public DictDB<BigInteger, LiquidityOrder> orders;
+public VarDB<BigInteger> investedEmissions;
 
 // All below parameters should be configurable by governance only.
-public VarDB<BigInteger> orderPeriod; // Microseconds
+public VarDB<BigInteger> orderPeriod; // Blocks
 
 public VarDB<Address> balancedDex;
-public VarDB<Address> bnUSD;
-public VarDB<Address> sICX;
 public VarDB<Address> balancedOracle;
-public VarDB<Address> balancedRouter;
 
-public VarDB<BigInteger> maxSwapSlippage; // Points (0-10000)
 public VarDB<BigInteger> swapReward; // Points (0-10000)
 public VarDB<BigInteger> lPSlippage; // Points (0-10000)
 
+
 LiquidityOrder {
     BigInteger limit
-    BigInteger period
-    BigInteger payoutThisPeriod
+    BigInteger lastPurchaseBlock
+    BigInteger remaining
 }
 ```
 
@@ -42,36 +39,18 @@ LiquidityOrder {
 
 ```java
 /**
- * Swaps ICX amount to bnUSD
- *
- * @param amount The amount of ICX to be swapped
- */
-@External
-public void swap(BigInteger amount) {
-    icxPriceInUSD = balancedOracle.getPriceInUSD("ICX");
-    usdAmount = amount*icxPriceInUSD / EXA;
-    minReceive = (POINTS-maxSwapSlippage)*usdAmount / POINTS;
-    balancedRouter.route(amount, [sICX, bnUSD], minReceive);
-}
-```
-
-```java
-/**
  * Configures a new liquidity order
  *
  * @param pid The poolId on the balanced dex
- * @param limit The max USD limit to purchase for each Order Period
+ * @param limit The max ICX limit to purchase for each Order Period
  */
 @External
 public void configureOrder(BigInteger pid, BigInteger limit) {
     OnlyICONGovernance()
-    timestamp = Context.getTimestamp()
-    period = orderPeriod.get()
-
     order = LiquidityOrder {
         limit = limit,
-        period = (timestamp/period)*period,
-        payoutThisPeriod = 0
+        remaining = limit,
+        lastPurchaseBlock = Context.getBlockHeight()
     }
 
     orders.set(pid, order);
@@ -120,33 +99,6 @@ public void disburseICX(Address recipient, BigInteger amount) {
 }
 ```
 
-<!-- ```java
-/**
- * Manually supplies liquidity through available tokens via governance
- *
- * @param baseAddress The address of the base token
- * @param baseAmount The amount of of the base token to use
- * @param quoteAddress The address of the quote token
- * @param quoteAmount The amount of of the quote token to use
- * @param slippage The biggest allowed difference between decided price and the actual price when supplying.
- */
-public void supplyLiquidity(Address baseAddress, BigInteger baseAmount, Address quoteAddress,
-            BigInteger quoteAmount, BigInteger slippage) {
-
-    OnlyICONGovernance();
-    pid = balancedDex.getPoolId(baseAddress, quoteAddress);
-
-    supplyPrice = quoteAmount.multiply(EXA).divide(baseAmount);
-    dexPrice = balancedDex.getPrice(pid);
-    allowedDiff = supplyPrice. * slippage / POINTS;
-    assert supplyPrice - allowedDiff < dexprice;
-    assert supplyPrice + allowedDiff > dexprice;
-    baseAddress.transfer(dex, baseAmount, <tokenDepositData>)
-    quoteAddress.transfer(dex, quoteAmount, <tokenDepositData>)
-    balancedDex.add(baseAddress, quoteAddress, baseAmount, quoteAmount, true)
-}
-``` -->
-
 ```java
 /**
  * Removes liquidity
@@ -164,13 +116,13 @@ public void withdrawLiquidity(BigInteger pid, BigInteger amount) {
 
 ```java
 /**
- * Calculates the bnUSD rewards gained by swapping 'amount' of LP tokens with a specific pid
+ * Calculates the ICX rewards gained by swapping 'amount' of LP tokens with a specific pid
  *
  * @param pid The poolId on the balanced dex
  * @param amount The amount of LP tokens to swap
  */
 @External(readonly = true)
-public BigInteger calculateBnUSDReward(BigInteger pid, BigInteger amount) {
+public BigInteger calculateICXReward(BigInteger pid, BigInteger amount) {
     stats = balancedDex.getPoolStats(pid);
 
     baseAmount = stats["base"]*amount  / stats["total_supply"];
@@ -195,7 +147,9 @@ public BigInteger calculateBnUSDReward(BigInteger pid, BigInteger amount) {
 
     reward = (baseAmountInUSD+quoteAmountInUSD)*(POINTS+swapReward) / POINTS
 
-    return reward
+    rewardsInICX = reward * 10**18 / balancedOracle.getPriceInUSD("ICX")
+
+    return rewardsInICX
 }
 ```
 
@@ -221,36 +175,21 @@ public void onIRC31Received(Address _operator, Address _from, BigInteger _id, Bi
 
 
 ```java
-/**
- * Swaps ICX amount to bnUSD
- *
- * @param amount The amount of ICX to be swapped
- */
 @External
 public void fallback() {
-    try {
-        swap(Context.getValue());
-    } catch error {
-        SwapFailed()
-    }
 }
 ```
 
 ```java
-/**
- * Receives tokens
- *
- */
 @External
 public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
 }
 ```
 
 
-
 ```java
 /**
- * Swaps LP tokens for bnUSD
+ * Swaps LP tokens for ICX
  *
  * @param from The user who supplied the LP tokens
  * @param id The poolId on the balanced dex
@@ -258,10 +197,11 @@ public void tokenFallback(Address _from, BigInteger _value, byte[] _data) {
  */
 private void swapLPTokens(Address from, BigInteger id, BigInteger value) {
     order = orders.get(id);
-    reward = calculateBnUSDReward(id, value);
-    order = validateOrder(order, id);
+    reward = calculateICXReward(id, value);
+    order = validateOrder(order, reward);
     orders.set(id, order)
-    bnUSD.transfer(from, reward)
+    Context.transfer(from, reward)
+    investedEmissions += reward
     LiquidityPurchased(id, value, reward)
 }
 ```
@@ -272,19 +212,14 @@ private void swapLPTokens(Address from, BigInteger id, BigInteger value) {
  *
  */
 private LiquidityOrder validateOrder(LiquidityOrder order, BigInteger payoutAmount) {
-    orderPeriod = orderPeriod.get();
-    currentTime = Context.getTimestamp();
-    if (order.period + orderPeriod >=  currentTime) {
-        // with integer division this return the current period
-        order.period = (currentTime / orderPeriod) * orderPeriod;
-        order.payoutThisPeriod = 0;
-    }
-
-    order.payoutThisPeriod +=  payoutAmount;
-    assert order.payoutThisPeriod <= order.limit
+    blockDiff = Context.getBlockHeight() - order.lastPurchaseBlock;
+    rate = limit/orderPeriod;
+    addedAmount = blockDiff * rate;
+    order.remaining =  order.limit.min(addedAmount + order.remaining);
+    assert order.remaining >= payoutAmount
+    order.remaining -= payoutAmount
 
     return order;
-
 }
 ```
 
@@ -292,10 +227,5 @@ private LiquidityOrder validateOrder(LiquidityOrder order, BigInteger payoutAmou
 
 ```java
 @EventLog(indexed = 1)
-void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger bnUSDPayout)
-```
-
-```java
-@EventLog(indexed = 1)
-void SwapFailed()
+void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger payout)
 ```

@@ -23,8 +23,7 @@ import static icon.inflation.score.util.Checks.only;
 import static icon.inflation.score.util.Checks.onlyOwner;
 import static icon.inflation.score.util.Checks.validatePoints;
 import static icon.inflation.score.util.Constants.EXA;
-import static icon.inflation.score.util.Constants.MICRO_SECONDS_IN_A_DAY;
-import static icon.inflation.score.util.Constants.MICRO_SECONDS_IN_A_MONTH;
+import static icon.inflation.score.util.Constants.BLOCKS_IN_A_MONTH;
 import static icon.inflation.score.util.Constants.POINTS;
 import static icon.inflation.score.util.Math.pow;
 
@@ -33,48 +32,31 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
 
     public static final DictDB<BigInteger, LiquidityOrder> orders = Context.newDictDB("ORDERS", LiquidityOrder.class);
     public static final ArrayDB<BigInteger> ordersList = Context.newArrayDB("ORDERS_LIST", BigInteger.class);
-
-    // All below parameters should be configurable by governance only.
+    public static final VarDB<BigInteger> investedEmissions = Context.newVarDB("INVESTED_EMISSIONS", BigInteger.class);
     public static final VarDB<BigInteger> orderPeriod = Context.newVarDB("ORDER_PERIOD", BigInteger.class); // Microseconds
 
     public static final VarDB<Address> balancedDex = Context.newVarDB("BALANCED_DEX_ADDRESS", Address.class);
-    public static final VarDB<Address> bnUSD = Context.newVarDB("BNUSD_ADDRESS", Address.class);
-    public static final VarDB<Address> sICX = Context.newVarDB("STAKED_ICX_ADDRESS", Address.class);
     public static final VarDB<Address> balancedOracle = Context.newVarDB("BALANCED_ORACLE_ADDRESS", Address.class);
-    public static final VarDB<Address> balancedRouter = Context.newVarDB("BALANCED_ROUTER_ADDRESS", Address.class);
 
-    // Points(0-10000)
-    public static final VarDB<BigInteger> maxSwapSlippage = Context.newVarDB("MAX_SWAP_SLIPPAGE", BigInteger.class);
     // Points(0-10000)
     public static final VarDB<BigInteger> swapReward = Context.newVarDB("SWAP_REWARD", BigInteger.class);
-    // Points(0-10000)
     public static final VarDB<BigInteger> lPSlippage = Context.newVarDB("LP_SLIPPAGE", BigInteger.class);
 
-    public static final BigInteger DEFAULT_ORDER_PERIOD = MICRO_SECONDS_IN_A_MONTH;
-    public static final BigInteger DEFAULT_SWAP_SLIPPAGE = BigInteger.valueOf(100); // 1%
+    public static final BigInteger DEFAULT_ORDER_PERIOD = BLOCKS_IN_A_MONTH;
     public static final BigInteger DEFAULT_SWAP_REWARDS = BigInteger.valueOf(100); // 1%
     public static final BigInteger DEFAULT_LP_SLIPPAGE = BigInteger.valueOf(200); // 2%
 
-    public NetworkOwnedLiquidity(Address _balancedDex, Address _bnUSD, Address _sICX, Address _balancedOracle,
-            Address _balancedRouter) {
+    public NetworkOwnedLiquidity(Address _balancedDex, Address _balancedOracle) {
         balancedDex.set(_balancedDex);
-        bnUSD.set(_bnUSD);
-        sICX.set(_sICX);
         balancedOracle.set(_balancedOracle);
-        balancedRouter.set(_balancedRouter);
 
         orderPeriod.set(DEFAULT_ORDER_PERIOD);
-        maxSwapSlippage.set(DEFAULT_SWAP_SLIPPAGE);
         swapReward.set(DEFAULT_SWAP_REWARDS);
         lPSlippage.set(DEFAULT_LP_SLIPPAGE);
     }
 
     @EventLog(indexed = 1)
-    public void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger bnUSDPayout) {
-    }
-
-    @EventLog(indexed = 0)
-    public void SwapFailed() {
+    public void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger payout) {
     }
 
     @External(readonly = true)
@@ -104,9 +86,6 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     @External
     public void setOrderPeriod(BigInteger _orderPeriod) {
         onlyOwner();
-        Context.require(MICRO_SECONDS_IN_A_MONTH.multiply(BigInteger.valueOf(3)).compareTo(_orderPeriod) >= 0,
-                Errors.INVALID_PERIOD);
-        Context.require(MICRO_SECONDS_IN_A_DAY.compareTo(_orderPeriod) <= 0, Errors.INVALID_PERIOD);
         orderPeriod.set(_orderPeriod);
     }
 
@@ -122,28 +101,6 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     }
 
     @External(readonly = true)
-    public Address getBnUSD() {
-        return bnUSD.get();
-    }
-
-    @External
-    public void setBnUSD(Address _bnUSD) {
-        onlyOwner();
-        bnUSD.set(_bnUSD);
-    }
-
-    @External(readonly = true)
-    public Address getSICX() {
-        return sICX.get();
-    }
-
-    @External
-    public void setSICX(Address _sICX) {
-        onlyOwner();
-        sICX.set(_sICX);
-    }
-
-    @External(readonly = true)
     public Address getBalancedOracle() {
         return balancedOracle.get();
     }
@@ -152,29 +109,6 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     public void setBalancedOracle(Address _balancedOracle) {
         onlyOwner();
         balancedOracle.set(_balancedOracle);
-    }
-
-    @External(readonly = true)
-    public Address getBalancedRouter() {
-        return balancedRouter.get();
-    }
-
-    @External
-    public void setBalancedRouter(Address _balancedRouter) {
-        onlyOwner();
-        balancedRouter.set(_balancedRouter);
-    }
-
-    @External(readonly = true)
-    public BigInteger getMaxSwapSlippage() {
-        return maxSwapSlippage.get();
-    }
-
-    @External
-    public void setMaxSwapSlippage(BigInteger _maxSwapSlippage) {
-        onlyOwner();
-        validatePoints(_maxSwapSlippage);
-        maxSwapSlippage.set(_maxSwapSlippage);
     }
 
     @External(readonly = true)
@@ -201,12 +135,9 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         lPSlippage.set(_lPSlippage);
     }
 
-    @External
-    public void swap(BigInteger amount) {
-        BigInteger icxPriceInUSD = Context.call(BigInteger.class, getBalancedOracle(), "getLastPriceInUSD", "ICX");
-        BigInteger usdAmount = amount.multiply(icxPriceInUSD).divide(EXA);
-        BigInteger minReceive = (POINTS.subtract(getMaxSwapSlippage())).multiply(usdAmount).divide(POINTS);
-        Context.call(amount, getBalancedRouter(), "route", new Address[] { getSICX(), getBnUSD() }, minReceive);
+    @External(readonly = true)
+    public BigInteger getInvestedEmissions() {
+        return investedEmissions.getOrDefault(BigInteger.ZERO);
     }
 
     @External
@@ -214,8 +145,8 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         onlyOwner();
         LiquidityOrder order = new LiquidityOrder();
         order.limit = limit;
-        order.period = getCurrentPeriod();
-        order.payoutThisPeriod = BigInteger.ZERO;
+        order.lastPurchaseBlock = BigInteger.valueOf(Context.getBlockHeight());;
+        order.remaining = limit;
         orders.set(pid, order);
         if (!DBUtils.arrayDbContains(ordersList, pid)) {
             ordersList.add(pid);
@@ -248,7 +179,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     }
 
     @External(readonly = true)
-    public BigInteger calculateBnUSDReward(BigInteger pid, BigInteger amount) {
+    public BigInteger calculateICXReward(BigInteger pid, BigInteger amount) {
         @SuppressWarnings("unchecked")
         Map<String, Object> stats = (Map<String, Object>) Context.call(getBalancedDex(), "getPoolStats", pid);
         BigInteger base = (BigInteger) stats.get("base");
@@ -284,8 +215,12 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
 
         BigInteger percentageReward = POINTS.add(getSwapReward());
         BigInteger totalUSDValue = baseAmountInUSD.add(quoteAmountInUSD);
+        BigInteger totalUSDReward = totalUSDValue.multiply(percentageReward).divide(POINTS);
 
-        return totalUSDValue.multiply(percentageReward).divide(POINTS);
+        BigInteger ICXPriceInUSD = Context.call(BigInteger.class, oracle, "getLastPriceInUSD", "ICX");
+        BigInteger ICXReward = totalUSDReward.multiply(EXA).divide(ICXPriceInUSD);
+
+        return ICXReward;
     }
 
     @External
@@ -310,11 +245,6 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
 
     @Payable
     public void fallback() {
-        try {
-            swap(Context.getValue());
-        } catch (Exception e) {
-            SwapFailed();
-        }
     }
 
     @External
@@ -323,31 +253,27 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
 
     private void swapLPTokens(Address from, BigInteger id, BigInteger value) {
         LiquidityOrder order = orders.get(id);
-        BigInteger reward = calculateBnUSDReward(id, value);
+        Context.require(order != null, Errors.NO_ORDER_EXISTS);
+        BigInteger reward = calculateICXReward(id, value);
         order = validateOrder(order, reward);
         orders.set(id, order);
-        Context.call(getBnUSD(), "transfer", from, reward);
+        investedEmissions.set(getInvestedEmissions().add(reward));
+
+        Context.transfer(from, reward);
         LiquidityPurchased(id, value, reward);
     }
 
     private LiquidityOrder validateOrder(LiquidityOrder order, BigInteger payoutAmount) {
-        BigInteger currentPeriod = getCurrentPeriod();
-        if (order.period.compareTo(currentPeriod) < 0) {
-            order.period = currentPeriod;
-            order.payoutThisPeriod = BigInteger.ZERO;
-        }
+        BigInteger height = BigInteger.valueOf(Context.getBlockHeight());
+        BigInteger blockDiff = height.subtract(order.lastPurchaseBlock);
+        BigInteger rate = order.limit.divide(orderPeriod.get());
+        BigInteger addedAmount = blockDiff.multiply(rate);
 
-        order.payoutThisPeriod = order.payoutThisPeriod.add(payoutAmount);
-        Context.require(order.payoutThisPeriod.compareTo(order.limit) <= 0, Errors.ORDER_LIMIT_REACHED);
+        order.remaining = order.limit.min(addedAmount.add(order.remaining));
+        Context.require(order.remaining.compareTo(payoutAmount) >= 0, Errors.ORDER_LIMIT_REACHED);
+        order.remaining = order.remaining.subtract(payoutAmount);
+        order.lastPurchaseBlock = height;
 
         return order;
     }
-
-    private BigInteger getCurrentPeriod() {
-        BigInteger period = getOrderPeriod();
-        BigInteger time = BigInteger.valueOf(Context.getBlockTimestamp());
-
-        return time.divide(period).multiply(period);
-    }
-
 }
