@@ -17,17 +17,11 @@ import icon.inflation.score.util.Checks;
 import icon.inflation.test.MockContract;
 import icon.inflation.test.interfaces.*;
 import score.Address;
-import score.UserRevertedException;
 
 import static icon.inflation.score.util.Constants.EXA;
-import static icon.inflation.score.util.Constants.MICRO_SECONDS_IN_A_MONTH;
-import static icon.inflation.score.util.Constants.MICRO_SECONDS_IN_A_SECOND;
 import static icon.inflation.score.util.Constants.POINTS;
 import static icon.inflation.test.Utils.expectErrorMessage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +36,6 @@ public class NetworkOwnedLiquidityTest extends TestBase {
     protected MockContract<IRC2> sICX;
     protected MockContract<IRC2> sARCH;
     protected MockContract<BalancedOracle> oracle;
-    protected MockContract<Router> router;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -51,14 +44,13 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         sICX = new MockContract<>(IRC2ScoreInterface.class, IRC2.class, sm, governance);
         sARCH = new MockContract<>(IRC2ScoreInterface.class, IRC2.class, sm, governance);
         oracle = new MockContract<>(BalancedOracleScoreInterface.class, BalancedOracle.class, sm, governance);
-        router = new MockContract<>(RouterScoreInterface.class, Router.class, sm, governance);
 
         when(bnUSD.mock.symbol()).thenReturn("bnUSD");
         when(sICX.mock.symbol()).thenReturn("sICX");
         when(sARCH.mock.symbol()).thenReturn("sARCH");
 
-        networkOwnedLiquidity = sm.deploy(governance, NetworkOwnedLiquidity.class, dex.getAddress(), bnUSD.getAddress(),
-                sICX.getAddress(), oracle.getAddress(), router.getAddress());
+        networkOwnedLiquidity = sm.deploy(governance, NetworkOwnedLiquidity.class, dex.getAddress(),
+                oracle.getAddress());
     }
 
     @Test
@@ -79,13 +71,13 @@ public class NetworkOwnedLiquidityTest extends TestBase {
 
         assertEquals(pid1, orders[0].pid);
         assertEquals(limit1, orders[0].limit);
-        assertEquals(getCurrentPeriod(), orders[0].period);
-        assertEquals(BigInteger.ZERO, orders[0].payoutThisPeriod);
+        assertEquals(getCurrentBlock().subtract(BigInteger.ONE), orders[0].lastPurchaseBlock);
+        assertEquals(limit1, orders[0].remaining);
 
         assertEquals(pid2, orders[1].pid);
         assertEquals(limit2, orders[1].limit);
-        assertEquals(getCurrentPeriod(), orders[1].period);
-        assertEquals(BigInteger.ZERO, orders[1].payoutThisPeriod);
+        assertEquals(getCurrentBlock(), orders[1].lastPurchaseBlock);
+        assertEquals(limit2, orders[1].remaining);
     }
 
     @Test
@@ -106,8 +98,8 @@ public class NetworkOwnedLiquidityTest extends TestBase {
 
         assertEquals(pid1, orders[0].pid);
         assertEquals(limit2, orders[0].limit);
-        assertEquals(getCurrentPeriod(), orders[0].period);
-        assertEquals(BigInteger.ZERO, orders[0].payoutThisPeriod);
+        assertEquals(getCurrentBlock(), orders[0].lastPurchaseBlock);
+        assertEquals(limit2, orders[0].remaining);
     }
 
     @Test
@@ -130,8 +122,8 @@ public class NetworkOwnedLiquidityTest extends TestBase {
 
         assertEquals(pid2, orders[0].pid);
         assertEquals(limit2, orders[0].limit);
-        assertEquals(getCurrentPeriod(), orders[0].period);
-        assertEquals(BigInteger.ZERO, orders[0].payoutThisPeriod);
+        assertEquals(getCurrentBlock().subtract(BigInteger.ONE), orders[0].lastPurchaseBlock);
+        assertEquals(limit2, orders[0].remaining);
     }
 
     @Test
@@ -141,7 +133,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         byte[] swapData = "{\"method\":\"swap\"}".getBytes();
         BigInteger amount = BigInteger.TEN.multiply(EXA);
         BigInteger pid = BigInteger.ONE;
-        networkOwnedLiquidity.invoke(governance, "configureOrder", pid, EXA.multiply(EXA));
+        networkOwnedLiquidity.invoke(governance, "configureOrder", pid, BigInteger.valueOf(100000).multiply(EXA));
 
         Address baseToken = sICX.getAddress();
         Address quoteToken = bnUSD.getAddress();
@@ -171,18 +163,29 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
         // this results in a 40 bnUSD + reward payout since price is exactly correct'
         // Default rewards is 1% so total = 40.4 bnUSD
-        BigInteger expectedRewards = BigInteger.valueOf(404).multiply(BigInteger.TEN.pow(17));
+        BigInteger ICXPriceInUSD = BigInteger.valueOf(25).multiply(BigInteger.TEN.pow(16)); // $0.25
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXPriceInUSD);
+        // ICX reward = 40.4 * 4 = 161.6
+        BigInteger expectedICXRewards = BigInteger.valueOf(1616).multiply(BigInteger.TEN.pow(17));
+        networkOwnedLiquidity.getAccount().addBalance(expectedICXRewards.multiply(BigInteger.TWO));
 
         // Act
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
                 swapData);
+        BigInteger blockDiff = BigInteger.valueOf(1000);
+        sm.getBlock().increase(blockDiff.longValue());
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
                 swapData);
 
         // Assert
-        verify(bnUSD.mock, times(2)).transfer(user.getAddress(), expectedRewards, null);
+        assertEquals(expectedICXRewards.add(expectedICXRewards), user.getBalance());
+
         LiquidityOrder[] orders = (LiquidityOrder[]) networkOwnedLiquidity.call("getOrders");
-        assertEquals(expectedRewards.add(expectedRewards), orders[0].payoutThisPeriod);
+        blockDiff = blockDiff.add(BigInteger.ONE);
+        BigInteger remaining = orders[0].limit.subtract(expectedICXRewards);
+        BigInteger rate = orders[0].limit.divide(NetworkOwnedLiquidity.DEFAULT_ORDER_PERIOD);
+        remaining = remaining.add(rate.multiply(blockDiff)).subtract(expectedICXRewards);
+        assertEquals(remaining, orders[0].remaining);
     }
 
     @Test
@@ -231,21 +234,27 @@ public class NetworkOwnedLiquidityTest extends TestBase {
                 "base_decimals", baseDecimals,
                 "quote_decimals", quoteDecimals);
 
-            when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(base1USDPrice);
-            when(oracle.mock.getLastPriceInUSD("sARCH")).thenReturn(base2USDPrice);
-            when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
-            when(dex.mock.getPoolStats(pid1)).thenReturn(stats1);
-            when(dex.mock.getPoolStats(pid2)).thenReturn(stats2);
+        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(base1USDPrice);
+        when(oracle.mock.getLastPriceInUSD("sARCH")).thenReturn(base2USDPrice);
+        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
+        when(dex.mock.getPoolStats(pid1)).thenReturn(stats1);
+        when(dex.mock.getPoolStats(pid2)).thenReturn(stats2);
+
+        BigInteger ICXPriceInUSD = BigInteger.valueOf(25).multiply(BigInteger.TEN.pow(16)); // $0.25
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXPriceInUSD);
 
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
         // this results in a 20 + 10*2.01 = 40.1
         // Default rewards is 1% so total = 40.501 bnUSD
-        BigInteger expectedRewards1 = BigInteger.valueOf(40501).multiply(BigInteger.TEN.pow(15));
+        // ICX reward = 40.501*4 = 162.004
+        BigInteger expectedRewards1 = BigInteger.valueOf(162004).multiply(BigInteger.TEN.pow(15));
 
         // User send 1% of supply, this means 40 sARCH and 20 bnUSD value
         // this results in a 20 + 40*0.495 = 39.8
         // Default rewards is 1% so total = 40.198 bnUSD
-        BigInteger expectedRewards2 = BigInteger.valueOf(40198).multiply(BigInteger.TEN.pow(15));
+        // ICX reward = 40.198*4 = 160.792
+        BigInteger expectedRewards2 = BigInteger.valueOf(160792).multiply(BigInteger.TEN.pow(15));
+        networkOwnedLiquidity.getAccount().addBalance(expectedRewards1.add(expectedRewards2));
 
         // Act
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid1, amount,
@@ -254,11 +263,11 @@ public class NetworkOwnedLiquidityTest extends TestBase {
                 swapData);
 
         // Assert
-        verify(bnUSD.mock).transfer(user.getAddress(), expectedRewards1, null);
-        verify(bnUSD.mock).transfer(user.getAddress(), expectedRewards2, null);
+        assertEquals(expectedRewards1.add(expectedRewards2), user.getBalance());
+
         LiquidityOrder[] orders = (LiquidityOrder[]) networkOwnedLiquidity.call("getOrders");
-        assertEquals(expectedRewards1, orders[0].payoutThisPeriod);
-        assertEquals(expectedRewards2, orders[1].payoutThisPeriod);
+        assertEquals(orders[0].limit.subtract(expectedRewards1), orders[0].remaining);
+        assertEquals(orders[1].limit.subtract(expectedRewards2), orders[1].remaining);
     }
 
     @Test
@@ -306,61 +315,6 @@ public class NetworkOwnedLiquidityTest extends TestBase {
     }
 
     @Test
-    public void swapLPTokens_aboveLimit_periodUpdate() throws Throwable {
-        // Arrange
-        Account user = sm.createAccount();
-        byte[] swapData = "{\"method\":\"swap\"}".getBytes();
-        BigInteger amount = BigInteger.TEN.multiply(EXA);
-        BigInteger pid = BigInteger.ONE;
-
-        Address baseToken = sICX.getAddress();
-        Address quoteToken = bnUSD.getAddress();
-        // 1 sICX = 2 dollar
-        BigInteger base = BigInteger.valueOf(1000).multiply(EXA);
-        BigInteger quote = BigInteger.valueOf(2000).multiply(EXA);
-
-        BigInteger totalSupply = BigInteger.valueOf(1000).multiply(EXA);
-        BigInteger baseDecimals = BigInteger.valueOf(18);
-        BigInteger quoteDecimals = BigInteger.valueOf(18);
-        BigInteger baseUSDPrice = EXA.multiply(BigInteger.TWO);
-        BigInteger quoteUSDPrice = EXA;
-
-        Map<String, Object> stats = Map.of(
-                "base_token", baseToken,
-                "quote_token", quoteToken,
-                "base", base,
-                "quote", quote,
-                "total_supply", totalSupply,
-                "base_decimals", baseDecimals,
-                "quote_decimals", quoteDecimals);
-
-        when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(baseUSDPrice);
-        when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
-        when(dex.mock.getPoolStats(pid)).thenReturn(stats);
-
-        // User send 1% of supply, this means 10 ICX and 20 bnUSD value
-        // this results in a 40 bnUSD + reward payout since price is exactly correct'
-        // Default rewards is 1% so total = 40.4 bnUSD
-        BigInteger expectedRewards = BigInteger.valueOf(404).multiply(BigInteger.TEN.pow(17));
-        networkOwnedLiquidity.invoke(governance, "configureOrder", pid, expectedRewards.add(BigInteger.ONE));
-
-        // Act
-        networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
-                swapData);
-        Executable overLimit = () -> networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(),
-                user.getAddress(), pid, amount, swapData);
-        expectErrorMessage(overLimit, Errors.ORDER_LIMIT_REACHED);
-        BigInteger monthInBlocks = MICRO_SECONDS_IN_A_MONTH.divide(MICRO_SECONDS_IN_A_SECOND).divide(BigInteger.TWO);
-        sm.getBlock().increase(monthInBlocks.longValue());
-        overLimit.execute();
-
-        // Assert
-        verify(bnUSD.mock, times(2)).transfer(user.getAddress(), expectedRewards, null);
-        LiquidityOrder[] orders = (LiquidityOrder[]) networkOwnedLiquidity.call("getOrders");
-        assertEquals(expectedRewards, orders[0].payoutThisPeriod);
-    }
-
-    @Test
     public void swapLPTokens_aboveLimit() {
         // Arrange
         Account user = sm.createAccount();
@@ -393,16 +347,34 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
+        BigInteger ICXPriceInUSD = BigInteger.valueOf(25).multiply(BigInteger.TEN.pow(16)); // $0.25
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXPriceInUSD);
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
         // this results in a 40 bnUSD + reward payout since price is exactly correct'
         // Default rewards is 1% so total = 40.4 bnUSD
-        BigInteger expectedRewards = BigInteger.valueOf(404).multiply(BigInteger.TEN.pow(17));
-        networkOwnedLiquidity.invoke(governance, "configureOrder", pid, expectedRewards.add(BigInteger.ONE));
+        BigInteger expectedUSDRewards = BigInteger.valueOf(404).multiply(BigInteger.TEN.pow(17));
+        BigInteger expectedRewards = expectedUSDRewards.multiply(EXA).divide(ICXPriceInUSD);
+        networkOwnedLiquidity.getAccount().addBalance(expectedRewards.multiply(BigInteger.valueOf(3)));
+        networkOwnedLiquidity.invoke(governance, "configureOrder", pid, expectedRewards.multiply(BigInteger.TWO));
 
         // Act
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
                 swapData);
+        networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
+                swapData);
         Executable overLimit = () -> networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(),
+                user.getAddress(), pid, amount, swapData);
+        // Assert
+        expectErrorMessage(overLimit, Errors.ORDER_LIMIT_REACHED);
+
+        // Act
+        // Half a month should allow 1 more purchase
+        sm.getBlock().increase(NetworkOwnedLiquidity.DEFAULT_ORDER_PERIOD.divide(BigInteger.TWO).longValue());
+
+        // Assert
+        networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
+                swapData);
+        overLimit = () -> networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(),
                 user.getAddress(), pid, amount, swapData);
 
         // Assert
@@ -443,21 +415,23 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
+        BigInteger ICXPriceInUSD = BigInteger.valueOf(25).multiply(BigInteger.TEN.pow(16)); // $0.25
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXPriceInUSD);
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
         // this results in a 40 bnUSD + reward payout since price is exactly correct'
         // Default rewards is 1% so total = 40.4 bnUSD
-        BigInteger expectedRewards = BigInteger.valueOf(404).multiply(BigInteger.TEN.pow(17));
+        BigInteger expectedUSDRewards = BigInteger.valueOf(404).multiply(BigInteger.TEN.pow(17));
+        BigInteger expectedRewards = expectedUSDRewards.multiply(EXA).divide(ICXPriceInUSD);
+        networkOwnedLiquidity.getAccount().addBalance(expectedRewards);
 
         // Act
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
                 swapData);
-        networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
-                swapData);
 
         // Assert
-        verify(bnUSD.mock, times(2)).transfer(user.getAddress(), expectedRewards, null);
+        assertEquals(user.getBalance(), expectedRewards);
         LiquidityOrder[] orders = (LiquidityOrder[]) networkOwnedLiquidity.call("getOrders");
-        assertEquals(expectedRewards.add(expectedRewards), orders[0].payoutThisPeriod);
+        assertEquals(orders[0].limit.subtract(expectedRewards), orders[0].remaining);
     }
 
     @Test
@@ -496,22 +470,26 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         when(oracle.mock.getLastPriceInUSD("sICX")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
+        BigInteger ICXPriceInUSD = BigInteger.valueOf(25).multiply(BigInteger.TEN.pow(16)); // $0.25
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXPriceInUSD);
         // User send 1% of supply, this means 20 sARCH and 10 sICX value
-        // 10 ICX  = 15 USD
+        // 10 ICX = 15 USD
         // 30 sARCH = 0.49*3 = 14.85 USD
-        // Reward  is then 29.85 + reward
+        // Reward is then 29.85 + reward
         BigInteger rewardsPercentage = (BigInteger) networkOwnedLiquidity.call("getSwapReward");
-        BigInteger expectedRewards = BigInteger.valueOf(2985).multiply(BigInteger.TEN.pow(16))
+        BigInteger expectedUSDRewards = BigInteger.valueOf(2985).multiply(BigInteger.TEN.pow(16))
                 .multiply(rewardsPercentage.add(POINTS)).divide(POINTS);
+        BigInteger expectedRewards = expectedUSDRewards.multiply(EXA).divide(ICXPriceInUSD);
+        networkOwnedLiquidity.getAccount().addBalance(expectedRewards);
 
         // Act
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
                 swapData);
 
         // Assert
-        verify(bnUSD.mock).transfer(user.getAddress(), expectedRewards, null);
+        assertEquals(user.getBalance(), expectedRewards);
         LiquidityOrder[] orders = (LiquidityOrder[]) networkOwnedLiquidity.call("getOrders");
-        assertEquals(expectedRewards, orders[0].payoutThisPeriod);
+        assertEquals(orders[0].limit.subtract(expectedRewards), orders[0].remaining);
     }
 
     @Test
@@ -549,21 +527,25 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         when(oracle.mock.getLastPriceInUSD("bnUSD")).thenReturn(quoteUSDPrice);
         when(dex.mock.getPoolStats(pid)).thenReturn(stats);
 
+        BigInteger ICXPriceInUSD = BigInteger.valueOf(25).multiply(BigInteger.TEN.pow(16)); // $0.25
+        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXPriceInUSD);
         // User send 1% of supply, this means 10 ICX and 20 bnUSD value
         // 10 ICX *1.98 = 19.8 USD
         // this results in a 39.8 bnUSD + reward payout
         BigInteger rewardsPercentage = (BigInteger) networkOwnedLiquidity.call("getSwapReward");
-        BigInteger expectedRewards = BigInteger.valueOf(398).multiply(BigInteger.TEN.pow(17))
+        BigInteger expectedUSDRewards = BigInteger.valueOf(398).multiply(BigInteger.TEN.pow(17))
                 .multiply(rewardsPercentage.add(POINTS)).divide(POINTS);
+        BigInteger expectedRewards = expectedUSDRewards.multiply(EXA).divide(ICXPriceInUSD);
+        networkOwnedLiquidity.getAccount().addBalance(expectedRewards);
 
         // Act
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
                 swapData);
 
         // Assert
-        verify(bnUSD.mock).transfer(user.getAddress(), expectedRewards, null);
+        assertEquals(user.getBalance(), expectedRewards);
         LiquidityOrder[] orders = (LiquidityOrder[]) networkOwnedLiquidity.call("getOrders");
-        assertEquals(expectedRewards, orders[0].payoutThisPeriod);
+        assertEquals(orders[0].limit.subtract(expectedRewards), orders[0].remaining);
     }
 
     @Test
@@ -609,75 +591,10 @@ public class NetworkOwnedLiquidityTest extends TestBase {
     }
 
     @Test
-    public void fallback() {
-        // Arrange
-        BigInteger amount = BigInteger.TEN.multiply(EXA);
-        governance.addBalance(amount);
-        // add some remaining balance that should not swapped on fallback
-        networkOwnedLiquidity.getAccount().addBalance(BigInteger.ONE);
-        BigInteger ICXBnUSDPrice = EXA.multiply(BigInteger.TWO); // 1 ICX = $2
-        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXBnUSDPrice);
-        BigInteger slippage = (BigInteger) networkOwnedLiquidity.call("getMaxSwapSlippage");
-        BigInteger USDValue = amount.multiply(ICXBnUSDPrice).divide(EXA);
-        BigInteger minReceive = USDValue.multiply(POINTS.subtract(slippage)).divide(POINTS);
-
-        // Act
-        networkOwnedLiquidity.invoke(governance, amount, "fallback");
-
-        // Assert
-        verify(router.mock).route(new Address[] { sICX.getAddress(), bnUSD.getAddress() }, minReceive, null);
-        assertEquals(BigInteger.ONE, networkOwnedLiquidity.getAccount().getBalance());
-    }
-
-    @Test
-    public void fallback_failedSwap() {
-        // Arrange
-        NetworkOwnedLiquidity _spy = (NetworkOwnedLiquidity) spy(networkOwnedLiquidity.getInstance());
-        networkOwnedLiquidity.setInstance(_spy);
-
-        BigInteger amount = BigInteger.TEN.multiply(EXA);
-        governance.addBalance(amount);
-
-        doThrow(UserRevertedException.class).when(_spy).swap(amount);
-
-        // Act
-        networkOwnedLiquidity.invoke(governance, amount, "fallback");
-
-        // Assert
-        verify(_spy).SwapFailed();
-    }
-
-    @Test
-    public void ICXSwap() {
-        // Arrange
-        Account user = sm.createAccount();
-        BigInteger amount = BigInteger.TEN.multiply(EXA);
-        networkOwnedLiquidity.getAccount().addBalance(amount);
-        networkOwnedLiquidity.getAccount().addBalance(amount);
-
-        BigInteger ICXBnUSDPrice = EXA.multiply(BigInteger.TWO); // 1 ICX = $2
-        when(oracle.mock.getLastPriceInUSD("ICX")).thenReturn(ICXBnUSDPrice);
-        BigInteger slippage = (BigInteger) networkOwnedLiquidity.call("getMaxSwapSlippage");
-        BigInteger USDValue = amount.multiply(ICXBnUSDPrice).divide(EXA);
-        BigInteger minReceive = USDValue.multiply(POINTS.subtract(slippage)).divide(POINTS);
-
-        // Act
-        networkOwnedLiquidity.invoke(user, "swap", amount);
-
-        // Assert
-        verify(router.mock).route(new Address[] { sICX.getAddress(), bnUSD.getAddress() }, minReceive, null);
-        assertEquals(amount, networkOwnedLiquidity.getAccount().getBalance());
-    }
-
-    @Test
     public void testPermissions() {
         _testPermission("setOrderPeriod", Checks.Errors.ONLY_OWNER, BigInteger.ONE);
         _testPermission("setBalancedDex", Checks.Errors.ONLY_OWNER, dex.getAddress());
-        _testPermission("setBnUSD", Checks.Errors.ONLY_OWNER, dex.getAddress());
-        _testPermission("setSICX", Checks.Errors.ONLY_OWNER, dex.getAddress());
         _testPermission("setBalancedOracle", Checks.Errors.ONLY_OWNER, dex.getAddress());
-        _testPermission("setBalancedRouter", Checks.Errors.ONLY_OWNER, dex.getAddress());
-        _testPermission("setMaxSwapSlippage", Checks.Errors.ONLY_OWNER, BigInteger.ONE);
         _testPermission("setSwapReward", Checks.Errors.ONLY_OWNER, BigInteger.ONE);
         _testPermission("setLPSlippage", Checks.Errors.ONLY_OWNER, BigInteger.ONE);
 
@@ -697,8 +614,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         expectErrorMessage(call, error);
     }
 
-    private BigInteger getCurrentPeriod() {
-        BigInteger period = (BigInteger) networkOwnedLiquidity.call("getOrderPeriod");
-        return BigInteger.valueOf(sm.getBlock().getTimestamp()).divide(period).multiply(period);
+    private BigInteger getCurrentBlock() {
+        return BigInteger.valueOf(sm.getBlock().getHeight());
     }
 }

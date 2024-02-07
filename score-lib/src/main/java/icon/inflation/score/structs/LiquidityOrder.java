@@ -7,8 +7,8 @@ import java.math.BigInteger;
 
 public class LiquidityOrder {
     public BigInteger limit;
-    public BigInteger period;
-    public BigInteger payoutThisPeriod;
+    public BigInteger lastPurchaseBlock;
+    public BigInteger remaining;
     // return value only
     public BigInteger pid;
 
@@ -20,8 +20,8 @@ public class LiquidityOrder {
         LiquidityOrder liquidityOrder = new LiquidityOrder();
         reader.beginList();
         liquidityOrder.limit = reader.readBigInteger();
-        liquidityOrder.period = reader.readBigInteger();
-        liquidityOrder.payoutThisPeriod = reader.readBigInteger();
+        liquidityOrder.lastPurchaseBlock = reader.readBigInteger();
+        liquidityOrder.remaining = reader.readBigInteger();
         reader.end();
         return liquidityOrder;
     }
@@ -29,8 +29,8 @@ public class LiquidityOrder {
     public void writeObject(ObjectWriter writer) {
         writer.beginList(3);
         writer.write(this.limit);
-        writer.write(this.period);
-        writer.write(this.payoutThisPeriod);
+        writer.write(this.lastPurchaseBlock);
+        writer.write(this.remaining);
         writer.end();
     }
 }

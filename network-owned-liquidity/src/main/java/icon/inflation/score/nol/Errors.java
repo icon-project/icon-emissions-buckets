@@ -7,4 +7,5 @@ public class Errors {
     public static final String ORDER_LIMIT_REACHED = "Order is above configured limit";
     public static final String LP_OVER_SLIPPAGE_LIMIT = "The price of the liquidity pool is to far off the oracle price of supplied assets";
     public static final String INVALID_PERIOD = "Order period must be between 1 day and 3 months";
+    public static final String NO_ORDER_EXISTS = "No order exist for this pool ID";
 }

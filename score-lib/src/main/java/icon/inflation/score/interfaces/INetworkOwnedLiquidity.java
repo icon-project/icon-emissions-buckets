@@ -10,10 +10,7 @@ import score.annotation.Optional;
 
 public interface INetworkOwnedLiquidity {
     @EventLog(indexed = 1)
-    void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger bnUSDPayout);
-
-    @EventLog(indexed = 0)
-    void SwapFailed();
+    void LiquidityPurchased(BigInteger pid, BigInteger lpTokenAmount, BigInteger payout);
 
     @External(readonly = true)
     String name();
@@ -34,34 +31,10 @@ public interface INetworkOwnedLiquidity {
     void setBalancedDex(Address _balancedDex);
 
     @External(readonly = true)
-    Address getBnUSD();
-
-    @External
-    void setBnUSD(Address _bnUSD);
-
-    @External(readonly = true)
-    Address getSICX();
-
-    @External
-    void setSICX(Address _sICX);
-
-    @External(readonly = true)
     Address getBalancedOracle();
 
     @External
     void setBalancedOracle(Address _balancedOracle);
-
-    @External(readonly = true)
-    Address getBalancedRouter();
-
-    @External
-    void setBalancedRouter(Address _balancedRouter);
-
-    @External(readonly = true)
-    BigInteger getMaxSwapSlippage();
-
-    @External
-    void setMaxSwapSlippage(BigInteger _maxSwapSlippage);
 
     @External(readonly = true)
     BigInteger getSwapReward();
@@ -75,13 +48,8 @@ public interface INetworkOwnedLiquidity {
     @External
     void setLPSlippage(BigInteger _lPSlippage);
 
-    /**
-     * Swaps ICX amount to bnUSD
-     *
-     * @param amount The amount of ICX to be swapped
-     */
-    @External
-    void swap(BigInteger amount);
+    @External(readonly = true)
+    BigInteger getInvestedEmissions();
 
     /**
      * Configures a new liquidity order
@@ -130,14 +98,14 @@ public interface INetworkOwnedLiquidity {
     void withdrawLiquidity(BigInteger pid, BigInteger amount);
 
     /**
-     * Calculates the bnUSD rewards gained by swapping 'amount' of LP tokens with a
+     * Calculates the ICX rewards gained by swapping 'amount' of LP tokens with a
      * specific pid
      *
      * @param pid    The poolId on the balanced dex
      * @param amount The amount of LP tokens to swap
      */
     @External(readonly = true)
-    BigInteger calculateBnUSDReward(BigInteger pid, BigInteger amount);
+    BigInteger calculateICXReward(BigInteger pid, BigInteger amount);
 
     /**
      * Receives LP tokens from the balanced dex, If the method is swap then
@@ -148,9 +116,7 @@ public interface INetworkOwnedLiquidity {
     void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data);
 
     /**
-     * Swaps ICX amount to bnUSD
-     *
-     * @param amount The amount of ICX to be swapped
+     * Receives ICX
      */
     @External
     void fallback();
