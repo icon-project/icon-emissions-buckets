@@ -1,4 +1,5 @@
-[![codecov](https://codecov.io/gh/icon-project/icon-emissions-buckets/graph/badge.svg?token=hcqWTItPBT)](https://codecov.io/gh/icon-project/icon-emissions-buckets)
+[![codecov](https://codecov.io/gh/icon-project/icon-emissions-buckets/branch/main/graph/badge.svg?token=hcqWTItPBT&flag=java)](https://codecov.io/gh/icon-project/icon-emissions-buckets)
+
 
 # Introduction
 For ICON to be able to manage where to send it inflation in versatile manner it needs a contract which can in a configurable way distribute to many sources.
