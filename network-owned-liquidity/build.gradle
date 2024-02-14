@@ -28,6 +28,7 @@ jacocoTestReport {
 }
 
 optimizedJar {
+    dependsOn project(':score-lib').jar
     mainClassName = 'icon.inflation.score.nol.NetworkOwnedLiquidity'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
@@ -83,3 +84,5 @@ task integrationTest(type: Test) {
     }
 
 }
+
+
