@@ -28,6 +28,7 @@ jacocoTestReport {
 }
 
 optimizedJar {
+    dependsOn project(':score-lib').jar
     mainClassName = 'icon.inflation.score.savings.SavingsRate'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
