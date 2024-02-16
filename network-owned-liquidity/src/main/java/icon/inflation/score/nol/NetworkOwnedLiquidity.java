@@ -44,7 +44,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
 
     public static final BigInteger DEFAULT_ORDER_PERIOD = BLOCKS_IN_A_MONTH;
     public static final BigInteger DEFAULT_SWAP_REWARDS = BigInteger.valueOf(100); // 1%
-    public static final BigInteger DEFAULT_LP_SLIPPAGE = BigInteger.valueOf(200); // 2%
+    public static final BigInteger DEFAULT_LP_SLIPPAGE = BigInteger.valueOf(100); // 1%
 
     public NetworkOwnedLiquidity(Address _balancedDex, Address _balancedOracle) {
         balancedDex.set(_balancedDex);
@@ -227,6 +227,7 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     public void onIRC31Received(Address _operator, Address _from, BigInteger _id, BigInteger _value, byte[] _data) {
         only(getBalancedDex());
         String unpackedData = new String(_data);
+        Context.require(_value.compareTo(BigInteger.ZERO) > 0, Errors.TOKEN_FALLBACK_ZERO_VALUE);
         Context.require(!unpackedData.equals(""), Errors.TOKEN_FALLBACK_DATA_EMPTY);
 
         JsonObject json = Json.parse(unpackedData).asObject();
