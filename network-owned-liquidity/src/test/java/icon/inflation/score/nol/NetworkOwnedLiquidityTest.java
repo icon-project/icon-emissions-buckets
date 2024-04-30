@@ -72,12 +72,12 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         assertEquals(pid1, orders[0].pid);
         assertEquals(limit1, orders[0].limit);
         assertEquals(getCurrentBlock().subtract(BigInteger.ONE), orders[0].lastPurchaseBlock);
-        assertEquals(limit1, orders[0].remaining);
+        assertEquals(BigInteger.ZERO, orders[0].remaining);
 
         assertEquals(pid2, orders[1].pid);
         assertEquals(limit2, orders[1].limit);
         assertEquals(getCurrentBlock(), orders[1].lastPurchaseBlock);
-        assertEquals(limit2, orders[1].remaining);
+        assertEquals(BigInteger.ZERO, orders[1].remaining);
     }
 
     @Test
@@ -98,8 +98,8 @@ public class NetworkOwnedLiquidityTest extends TestBase {
 
         assertEquals(pid1, orders[0].pid);
         assertEquals(limit2, orders[0].limit);
-        assertEquals(getCurrentBlock(), orders[0].lastPurchaseBlock);
-        assertEquals(limit2, orders[0].remaining);
+        assertEquals(getCurrentBlock().subtract(BigInteger.ONE), orders[0].lastPurchaseBlock);
+        assertEquals(BigInteger.ZERO, orders[0].remaining);
     }
 
     @Test
@@ -123,7 +123,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         assertEquals(pid2, orders[0].pid);
         assertEquals(limit2, orders[0].limit);
         assertEquals(getCurrentBlock().subtract(BigInteger.ONE), orders[0].lastPurchaseBlock);
-        assertEquals(limit2, orders[0].remaining);
+        assertEquals(BigInteger.ZERO, orders[0].remaining);
     }
 
     @Test
@@ -134,6 +134,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger amount = BigInteger.TEN.multiply(EXA);
         BigInteger pid = BigInteger.ONE;
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid, BigInteger.valueOf(100000).multiply(EXA));
+        sm.getBlock().increase(NetworkOwnedLiquidity.DEFAULT_ORDER_PERIOD.longValue());
 
         Address baseToken = sICX.getAddress();
         Address quoteToken = bnUSD.getAddress();
@@ -198,6 +199,8 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger pid2 = BigInteger.TWO;
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid1, EXA.multiply(EXA));
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid2, EXA.multiply(EXA));
+        networkOwnedLiquidity.invoke(governance, "setAvailableAmount", pid1, EXA.multiply(EXA));
+        networkOwnedLiquidity.invoke(governance, "setAvailableAmount", pid2, EXA.multiply(EXA));
 
         Address baseToken1 = sICX.getAddress();
         Address baseToken2 = sARCH.getAddress();
@@ -278,6 +281,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger amount = BigInteger.TEN.multiply(EXA);
         BigInteger pid = BigInteger.ONE;
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid, EXA.multiply(EXA));
+        networkOwnedLiquidity.invoke(governance, "setAvailableAmount", pid, EXA.multiply(EXA));
 
         Address baseToken = sICX.getAddress();
         Address quoteToken = bnUSD.getAddress();
@@ -356,6 +360,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger expectedRewards = expectedUSDRewards.multiply(EXA).divide(ICXPriceInUSD);
         networkOwnedLiquidity.getAccount().addBalance(expectedRewards.multiply(BigInteger.valueOf(3)));
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid, expectedRewards.multiply(BigInteger.TWO));
+        networkOwnedLiquidity.invoke(governance, "setAvailableAmount", pid, expectedRewards.multiply(BigInteger.TWO));
 
         // Act
         networkOwnedLiquidity.invoke(dex.account, "onIRC31Received", user.getAddress(), user.getAddress(), pid, amount,
@@ -389,6 +394,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger amount = BigInteger.TEN.multiply(EXA);
         BigInteger pid = BigInteger.ONE;
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid, EXA.multiply(EXA));
+        networkOwnedLiquidity.invoke(governance, "setAvailableAmount", pid, EXA.multiply(EXA));
 
         Address baseToken = sICX.getAddress();
         Address quoteToken = bnUSD.getAddress();
@@ -442,6 +448,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger amount = BigInteger.TEN.multiply(EXA);
         BigInteger pid = BigInteger.ONE;
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid, EXA.multiply(EXA));
+        networkOwnedLiquidity.invoke(governance, "setAvailableAmount", pid, EXA.multiply(EXA));
 
         Address baseToken = sARCH.getAddress();
         Address quoteToken = sICX.getAddress();
@@ -500,6 +507,7 @@ public class NetworkOwnedLiquidityTest extends TestBase {
         BigInteger amount = BigInteger.TEN.multiply(EXA);
         BigInteger pid = BigInteger.ONE;
         networkOwnedLiquidity.invoke(governance, "configureOrder", pid, EXA.multiply(EXA));
+        networkOwnedLiquidity.invoke(governance, "setAvailableAmount", pid, EXA.multiply(EXA));
 
         Address baseToken = sICX.getAddress();
         Address quoteToken = bnUSD.getAddress();

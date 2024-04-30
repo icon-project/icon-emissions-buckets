@@ -2,6 +2,7 @@ package icon.inflation.score.structs;
 
 import score.ObjectReader;
 import score.ObjectWriter;
+import score.Context;
 
 import java.math.BigInteger;
 
@@ -11,6 +12,11 @@ public class LiquidityOrder {
     public BigInteger remaining;
     // return value only
     public BigInteger pid;
+
+    public LiquidityOrder() {
+        lastPurchaseBlock = BigInteger.valueOf(Context.getBlockHeight());
+        remaining = BigInteger.ZERO;
+    }
 
     public static void writeObject(ObjectWriter writer, LiquidityOrder liquidityOrder) {
         liquidityOrder.writeObject(writer);

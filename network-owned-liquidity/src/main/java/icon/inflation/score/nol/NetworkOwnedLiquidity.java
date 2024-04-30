@@ -143,14 +143,20 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     @External
     public void configureOrder(BigInteger pid, BigInteger limit) {
         onlyOwner();
-        LiquidityOrder order = new LiquidityOrder();
+        LiquidityOrder order = orders.getOrDefault(pid, new LiquidityOrder());
         order.limit = limit;
-        order.lastPurchaseBlock = BigInteger.valueOf(Context.getBlockHeight());;
-        order.remaining = limit;
         orders.set(pid, order);
         if (!DBUtils.arrayDbContains(ordersList, pid)) {
             ordersList.add(pid);
         }
+    }
+
+    @External
+    public void setAvailableAmount(BigInteger pid, BigInteger amount) {
+        onlyOwner();
+        LiquidityOrder order = orders.get(pid);
+        order.remaining = amount;
+        orders.set(pid, order);
     }
 
     @External

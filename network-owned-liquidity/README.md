@@ -39,7 +39,7 @@ LiquidityOrder {
 
 ```java
 /**
- * Configures a new liquidity order
+ * Configures a liquidity order
  *
  * @param pid The poolId on the balanced dex
  * @param limit The max ICX limit to purchase for each Order Period
@@ -49,12 +49,29 @@ public void configureOrder(BigInteger pid, BigInteger limit) {
     OnlyICONGovernance()
     order = LiquidityOrder {
         limit = limit,
-        remaining = limit,
+        remaining = 0,
         lastPurchaseBlock = Context.getBlockHeight()
     }
 
     orders.set(pid, order);
 }
+```
+
+```java
+    /**
+     * Configures the remaining amount of a liquidity order.
+     *
+     * @param pid   The poolId on the balanced dex
+     * @param amount The amount to make available for purchase, max limited by the order limit.
+     */
+
+    @External
+    public void setAvailableAmount(BigInteger pid, BigInteger amount) {
+        OnlyICONGovernance();
+        order = orders.get(pid);
+        order.remaining = amount;
+        orders.set(pid, order);
+    }
 ```
 
 ```java
