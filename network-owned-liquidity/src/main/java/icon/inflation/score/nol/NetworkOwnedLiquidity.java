@@ -46,13 +46,15 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     public static final BigInteger DEFAULT_SWAP_REWARDS = BigInteger.valueOf(100); // 1%
     public static final BigInteger DEFAULT_LP_SLIPPAGE = BigInteger.valueOf(100); // 1%
 
-    public NetworkOwnedLiquidity(Address _balancedDex, Address _balancedOracle) {
-        balancedDex.set(_balancedDex);
-        balancedOracle.set(_balancedOracle);
+    public NetworkOwnedLiquidity(@Optional Address _balancedDex, @Optional Address _balancedOracle) {
+        if (balancedDex.get() == null) {
+            balancedDex.set(_balancedDex);
+            balancedOracle.set(_balancedOracle);
 
-        orderPeriod.set(DEFAULT_ORDER_PERIOD);
-        swapReward.set(DEFAULT_SWAP_REWARDS);
-        lPSlippage.set(DEFAULT_LP_SLIPPAGE);
+            orderPeriod.set(DEFAULT_ORDER_PERIOD);
+            swapReward.set(DEFAULT_SWAP_REWARDS);
+            lPSlippage.set(DEFAULT_LP_SLIPPAGE);
+        }
     }
 
     @EventLog(indexed = 1)
