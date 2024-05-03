@@ -52,13 +52,23 @@ public interface INetworkOwnedLiquidity {
     BigInteger getInvestedEmissions();
 
     /**
-     * Configures a new liquidity order
+     * Configures a liquidity order
      *
      * @param pid   The poolId on the balanced dex
      * @param limit The max USD limit to purchase for each Order Period
      */
     @External
     void configureOrder(BigInteger pid, BigInteger limit);
+
+
+    /**
+     * Configures the remaining amount of a liquidity order
+     *
+     * @param pid   The poolId on the balanced dex
+     * @param amount The amount to make available for purchase, max limited by the order limit.
+     */
+    @External
+    void setAvailableAmount(BigInteger pid, BigInteger amount);
 
     /**
      * Removes a liquidity order

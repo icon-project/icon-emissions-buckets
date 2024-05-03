@@ -46,13 +46,15 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     public static final BigInteger DEFAULT_SWAP_REWARDS = BigInteger.valueOf(100); // 1%
     public static final BigInteger DEFAULT_LP_SLIPPAGE = BigInteger.valueOf(100); // 1%
 
-    public NetworkOwnedLiquidity(Address _balancedDex, Address _balancedOracle) {
-        balancedDex.set(_balancedDex);
-        balancedOracle.set(_balancedOracle);
+    public NetworkOwnedLiquidity(@Optional Address _balancedDex, @Optional Address _balancedOracle) {
+        if (balancedDex.get() == null) {
+            balancedDex.set(_balancedDex);
+            balancedOracle.set(_balancedOracle);
 
-        orderPeriod.set(DEFAULT_ORDER_PERIOD);
-        swapReward.set(DEFAULT_SWAP_REWARDS);
-        lPSlippage.set(DEFAULT_LP_SLIPPAGE);
+            orderPeriod.set(DEFAULT_ORDER_PERIOD);
+            swapReward.set(DEFAULT_SWAP_REWARDS);
+            lPSlippage.set(DEFAULT_LP_SLIPPAGE);
+        }
     }
 
     @EventLog(indexed = 1)
@@ -143,14 +145,20 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     @External
     public void configureOrder(BigInteger pid, BigInteger limit) {
         onlyOwner();
-        LiquidityOrder order = new LiquidityOrder();
+        LiquidityOrder order = orders.getOrDefault(pid, new LiquidityOrder());
         order.limit = limit;
-        order.lastPurchaseBlock = BigInteger.valueOf(Context.getBlockHeight());;
-        order.remaining = limit;
         orders.set(pid, order);
         if (!DBUtils.arrayDbContains(ordersList, pid)) {
             ordersList.add(pid);
         }
+    }
+
+    @External
+    public void setAvailableAmount(BigInteger pid, BigInteger amount) {
+        onlyOwner();
+        LiquidityOrder order = orders.get(pid);
+        order.remaining = amount;
+        orders.set(pid, order);
     }
 
     @External
