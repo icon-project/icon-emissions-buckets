@@ -3,6 +3,7 @@ include(
         'buckets',
         'insurance',
         'network-owned-liquidity',
+        'proof-of-liquidity',
         'savings-rate',
         'score-lib',
         'test-lib',
