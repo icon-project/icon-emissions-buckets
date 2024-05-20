@@ -198,6 +198,21 @@ public class ProofOfLiquidityTest extends TestBase {
         verify(sICX.mock).transfer(rewards, total, expectedData.toString().getBytes());
     }
 
+    @Test
+    public void testPermissions() {
+        _testPermission("setStaking", Checks.Errors.ONLY_OWNER, staking.getAddress());
+        _testPermission("setBalancedRewards", Checks.Errors.ONLY_OWNER, rewards);
+        _testPermission("setSICX", Checks.Errors.ONLY_OWNER, sICX.getAddress());
+        _testPermission("configureDistributions", Checks.Errors.ONLY_OWNER, (Object)new LiquidityDistribution[0]);
+
+    }
+
+    private void _testPermission(String method, String error, Object... params) {
+        Account dummy = sm.createAccount();
+        Executable call = () -> pol.invoke(dummy, method, params);
+        expectErrorMessage(call, error);
+    }
+
     public LiquidityDistribution newDist(String source, BigInteger share) {
         LiquidityDistribution bucket = new LiquidityDistribution();
         bucket.source = source;

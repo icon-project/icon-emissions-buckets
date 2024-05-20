@@ -1,22 +1,22 @@
 package icon.inflation.score.pol;
 
+import static icon.inflation.score.util.Checks.onlyOwner;
+import static icon.inflation.score.util.Constants.EXA;
+
 import java.math.BigInteger;
+
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 
 import icon.inflation.score.structs.LiquidityDistribution;
 import icon.inflation.score.util.DBUtils;
-import score.Context;
-import score.ArrayDB;
-import score.VarDB;
 import score.Address;
+import score.ArrayDB;
+import score.Context;
+import score.VarDB;
 import score.annotation.External;
 import score.annotation.Payable;
-
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-import com.eclipsesource.json.JsonArray;
-
-import static icon.inflation.score.util.Constants.EXA;
-import static icon.inflation.score.util.Checks.onlyOwner;
 
 public class ProofOfLiquidity {
 
@@ -40,6 +40,42 @@ public class ProofOfLiquidity {
     @External(readonly = true)
     public String name() {
         return NAME;
+    }
+
+
+    @External
+    public void setStaking(Address _staking) {
+        onlyOwner();
+        staking.set(_staking);
+    }
+
+    @External(readonly = true)
+    public Address getStaking() {
+        return staking.get();
+    }
+
+
+    @External
+    public void setBalancedRewards(Address _balancedRewards) {
+        onlyOwner();
+        balancedRewards.set(_balancedRewards);
+    }
+
+    @External(readonly = true)
+    public Address getBalancedRewards() {
+        return balancedRewards.get();
+    }
+
+
+    @External
+    public void setSICX(Address _sICX) {
+        onlyOwner();
+        sICX.set(_sICX);
+    }
+
+    @External(readonly = true)
+    public Address getSICX() {
+        return sICX.get();
     }
 
     @External(readonly = true)
@@ -101,6 +137,7 @@ public class ProofOfLiquidity {
         Context.call(sICX.get(), "transfer", balancedRewards.get(), sum, data.toString().getBytes());
         distributing = false;
     }
+
 
 
     @External
