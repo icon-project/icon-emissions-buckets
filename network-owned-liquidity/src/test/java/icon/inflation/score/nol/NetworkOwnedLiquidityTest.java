@@ -571,6 +571,21 @@ public class NetworkOwnedLiquidityTest extends TestBase {
     }
 
     @Test
+    public void disburseAll() {
+        // Arrange
+        BigInteger amount = BigInteger.valueOf(12);
+        Address to = sm.createAccount().getAddress();
+        byte[] data = "test".getBytes();
+        when(bnUSD.mock.balanceOf(networkOwnedLiquidity.getAddress())).thenReturn(amount);
+
+        // Act
+        networkOwnedLiquidity.invoke(governance, "disburseAll", bnUSD.getAddress(), to, data);
+
+        // Assert
+        verify(bnUSD.mock).transfer(to, amount, data);
+    }
+
+    @Test
     public void disburseICX() {
         // Arrange
         BigInteger amount = BigInteger.TEN;
