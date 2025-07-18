@@ -169,6 +169,13 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
     }
 
     @External
+    public void disburseAll(Address token, Address recipient, @Optional byte[] data) {
+        onlyOwner();
+        BigInteger balance = Context.call(BigInteger.class, token, "balanceOf", Context.getAddress());
+        disburse(token, recipient, balance, data);
+    }
+
+    @External
     public void disburse(Address token, Address recipient, BigInteger amount, @Optional byte[] data) {
         onlyOwner();
         Context.call(token, "transfer", recipient, amount, data);
@@ -179,6 +186,8 @@ public class NetworkOwnedLiquidity implements INetworkOwnedLiquidity {
         onlyOwner();
         Context.transfer(recipient, amount);
     }
+
+
 
     @External
     public void withdrawLiquidity(BigInteger pid, BigInteger amount) {
